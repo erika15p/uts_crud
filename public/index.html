@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Manajemen Warung Makan</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #b6d2fc;
+    }
+    .table {
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .modal-header {
+      background-color: #6c6d6e;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary text-dark">Warteg Bahari<h2>
+    <div>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalKategori">Tambah Kategori</button>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAdd">Tambah Produk</button>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <input type="text" id="searchInput" class="form-control shadow-sm" placeholder="Cari produk...">
+  </div>
+
+  <div class="table-responsive shadow-sm rounded">
+    <table class="table table-bordered bg-white">
+      <thead class="table-light text-center">
+        <tr>
+          <th>ID</th>
+          <th>Nama Produk</th>
+          <th>Harga</th>
+          <th>Kategori</th>
+          <th style="width: 150px;">Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="produkList" class="text-center"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal untk tmbh produk -->
+<div class="modal fade" id="modalAdd" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="formAdd" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tambah Produk</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="addNama" class="form-control mb-3" placeholder="Nama Produk" required>
+        <input type="number" id="addHarga" class="form-control mb-3" placeholder="Harga" step="0.01" required>
+        <select id="addKategori" class="form-select" required></select>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-secondary me-2">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!--modal edit produk-->
+<div class="modal fade" id="modalEdit" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="formEdit" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Produk</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editId">
+        <input type="text" id="editNama" class="form-control mb-3" placeholder="Nama Produk" required>
+        <input type="number" id="editHarga" class="form-control mb-3" placeholder="Harga" step="0.01" required>
+        <select id="editKategori" class="form-select" required></select>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-secondary me-2">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!--modal add kategori-->
+<div class="modal fade" id="modalKategori" tabindex="-1">
+  <div class="modal-dialog">
+    <form id="formKategori" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Tambah Kategori</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="inputKategori" class="form-control" placeholder="Nama Kategori" required>
+      </div>
+      <div class="modal-footer">
+        <button type="submit" class="btn btn-secondary me-2">Simpan</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+let kategoriList = []
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadKategori()
+  loadProduk()
+
+  document.getElementById("formAdd").addEventListener("submit", e => {
+    e.preventDefault()
+    const data = {
+      nama: document.getElementById("addNama").value,
+      harga: parseFloat(document.getElementById("addHarga").value),
+      kategori_id: parseInt(document.getElementById("addKategori").value)
+    }
+    fetch("/products/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then(() => {
+      e.target.reset()
+      bootstrap.Modal.getInstance(document.getElementById("modalAdd")).hide()
+      loadProduk()
+    })
+  })
+
+  document.getElementById("formEdit").addEventListener("submit", e => {
+    e.preventDefault()
+    const data = {
+      id: parseInt(document.getElementById("editId").value),
+      nama: document.getElementById("editNama").value,
+      harga: parseFloat(document.getElementById("editHarga").value),
+      kategori_id: parseInt(document.getElementById("editKategori").value)
+    }
+    fetch("/products/update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    }).then(() => {
+      bootstrap.Modal.getInstance(document.getElementById("modalEdit")).hide()
+      loadProduk()
+    })
+  })
+
+  document.getElementById("formKategori").addEventListener("submit", e => {
+    e.preventDefault()
+    const nama = document.getElementById("inputKategori").value
+    fetch("/categories/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ nama })
+    }).then(() => {
+      e.target.reset()
+      bootstrap.Modal.getInstance(document.getElementById("modalKategori")).hide()
+      loadKategori()
+    })
+  })
+
+  document.getElementById("searchInput").addEventListener("input", e => {
+    const keyword = e.target.value.toLowerCase()
+    document.querySelectorAll("#produkList tr").forEach(row => {
+      row.style.display = row.textContent.toLowerCase().includes(keyword) ? "" : "none"
+    })
+  })
+})
+
+function loadKategori() {
+  fetch("/categories")
+    .then(res => res.json())
+    .then(data => {
+      kategoriList = data
+      const addSelect = document.getElementById("addKategori")
+      const editSelect = document.getElementById("editKategori")
+      addSelect.innerHTML = ""
+      editSelect.innerHTML = ""
+      data.forEach(k => {
+        addSelect.innerHTML += `<option value="${k.id}">${k.nama}</option>`
+        editSelect.innerHTML += `<option value="${k.id}">${k.nama}</option>`
+      })
+    })
+}
+
+function loadProduk() {
+  fetch("/products")
+    .then(res => res.json())
+    .then(data => {
+      const tbody = document.getElementById("produkList")
+      tbody.innerHTML = ""
+      data.forEach(p => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${p.id}</td>
+            <td>${p.nama}</td>
+            <td>Rp${parseFloat(p.harga).toLocaleString('id-ID')},-</td>
+            <td>${p.nama_kategori}</td>
+            <td>
+              <button class="btn btn-sm btn-warning me-1" onclick="showEdit(${p.id})">Edit</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id})">Hapus</button>
+            </td>
+          </tr>
+        `
+      })
+    })
+}
+
+function showEdit(id) {
+  fetch("/products")
+    .then(res => res.json())
+    .then(data => {
+      const produk = data.find(p => p.id === id)
+      if (produk) {
+        document.getElementById("editId").value = produk.id
+        document.getElementById("editNama").value = produk.nama
+        document.getElementById("editHarga").value = produk.harga
+        document.getElementById("editKategori").value = kategoriList.find(k => k.nama === produk.nama_kategori)?.id
+        new bootstrap.Modal(document.getElementById("modalEdit")).show()
+      }
+    })
+}
+
+function deleteProduct(id) {
+  if (!confirm("Anda yakin ingin menghapus menu dalam list ini?")) return
+  fetch(`/products/delete?id=${id}`, {
+    method: "DELETE"
+  }).then(() => loadProduk())
+}
+</script>
+</body>
+</html>
